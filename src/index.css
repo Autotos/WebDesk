@@ -1,0 +1,149 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* === Base shadcn tokens === */
+    --background: 220 20% 97%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 222.2 47.4% 11.2%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
+    --radius: 0.5rem;
+
+    /* === macOS Design Tokens === */
+    --mac-topbar: 220 15% 15%;
+    --mac-topbar-text: 0 0% 100%;
+    --mac-dock: 0 0% 100%;
+    --mac-window: 0 0% 100%;
+    --mac-titlebar: 220 10% 97%;
+    --mac-sidebar: 220 15% 95%;
+    --mac-accent: 211 100% 50%;
+    --mac-close: 0 85% 67%;
+    --mac-minimize: 40 95% 58%;
+    --mac-maximize: 130 60% 53%;
+    --mac-border: 220 10% 88%;
+
+    /* macOS layout sizes */
+    --mac-topbar-h: 28px;
+    --mac-dock-h: 62px;
+    --mac-dock-icon: 48px;
+    --mac-dock-icon-max: 72px;
+
+    /* macOS complex tokens */
+    --radius-window: 12px;
+    --radius-app-icon: 12px;
+    --shadow-window: 0 10px 30px -5px rgba(0, 0, 0, 0.12), 0 0 0 0.5px rgba(0, 0, 0, 0.06);
+    --shadow-window-active: 0 25px 50px -12px rgba(0, 0, 0, 0.22), 0 8px 20px -4px rgba(0, 0, 0, 0.10), 0 0 0 0.5px rgba(0, 0, 0, 0.08);
+    --shadow-dock: 0 0 0 0.5px rgba(255, 255, 255, 0.3), 0 8px 40px rgba(0, 0, 0, 0.18);
+    --shadow-topbar: 0 0.5px 0 rgba(0, 0, 0, 0.08);
+
+    /* === Android Material You Tokens === */
+    --android-surface: 0 0% 100%;
+    --android-primary: 217 89% 51%;
+    --android-on-primary: 0 0% 100%;
+    --android-secondary: 217 40% 93%;
+    --android-on-secondary: 217 30% 25%;
+    --android-nav: 220 15% 97%;
+    --android-status: 0 0% 5%;
+    --android-card: 0 0% 100%;
+
+    /* Android layout sizes */
+    --android-statusbar-h: 24px;
+    --android-nav-h: 48px;
+    --android-icon-size: 56px;
+    --radius-android-icon: 16px;
+
+    /* Android complex tokens */
+    --shadow-android-card: 0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06);
+
+    /* === Shared Animation Tokens === */
+    --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+    --ease-smooth: cubic-bezier(0.16, 1, 0.3, 1);
+    --duration-fast: 150ms;
+    --duration-normal: 250ms;
+    --duration-slow: 400ms;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html, body, #root {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text",
+      "Helvetica Neue", "Segoe UI", Roboto, system-ui, sans-serif;
+    @apply bg-background text-foreground;
+  }
+
+  /* Prevent text selection in UI chrome */
+  .os-chrome {
+    user-select: none;
+    -webkit-user-select: none;
+  }
+}
+
+@layer utilities {
+  /* Glass morphism utilities */
+  .glass-mac {
+    backdrop-filter: blur(40px) saturate(180%);
+    -webkit-backdrop-filter: blur(40px) saturate(180%);
+  }
+
+  .glass-dock {
+    backdrop-filter: blur(50px) saturate(200%);
+    -webkit-backdrop-filter: blur(50px) saturate(200%);
+  }
+
+  .glass-android {
+    backdrop-filter: blur(24px) saturate(150%);
+    -webkit-backdrop-filter: blur(24px) saturate(150%);
+  }
+
+  /* macOS window resize cursor zones */
+  .resize-handle {
+    position: absolute;
+    z-index: 10;
+  }
+
+  /* Scrollbar styling for Finder/Code editor */
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted-foreground) / 0.25);
+    border-radius: 3px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.4);
+  }
+}
