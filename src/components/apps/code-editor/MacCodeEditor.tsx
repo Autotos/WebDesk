@@ -11,6 +11,7 @@ import { MarkdownPreview } from './MarkdownPreview'
 import { MarkdownViewToggle } from './MarkdownViewToggle'
 import { EditorBreadcrumbs } from './EditorBreadcrumbs'
 import { EditorStatusBar } from './EditorStatusBar'
+import { ConflictBanner } from './ConflictBanner'
 
 export function MacCodeEditor() {
   const editor = useCodeEditor()
@@ -95,6 +96,11 @@ export function MacCodeEditor() {
             breadcrumbs={editor.breadcrumbs}
             compact={false}
           />
+        )}
+
+        {/* Conflict banner */}
+        {editor.activeTab?.externallyModified && (
+          <ConflictBanner tabId={editor.activeTab.id} onResolve={editor.resolveConflict} />
         )}
 
         {/* Editor / Preview area */}

@@ -2,9 +2,13 @@ import 'dotenv/config'
 import path from 'node:path'
 import fs from 'node:fs'
 import os from 'node:os'
+import { createServer } from 'node:http'
 import express from 'express'
 import cors from 'cors'
+import { Server as SocketIOServer } from 'socket.io'
 import { createFsRouter } from './routes/fsRoutes.js'
+import { SelfSaveTracker } from './services/selfSaveTracker.js'
+import { createFileWatcher } from './services/fileWatcher.js'
 
 /* ================================================================
    Configuration
@@ -32,8 +36,15 @@ app.use(cors())
 // Body parsing
 app.use(express.json({ limit: '15mb' }))
 
-// Mount file system API
-app.use('/api/fs', createFsRouter(ROOT_DIR))
+/* ================================================================
+   Self-save tracker & file system router
+   ================================================================ */
+
+const tracker = new SelfSaveTracker()
+
+app.use('/api/fs', createFsRouter(ROOT_DIR, (absolutePath) => {
+  tracker.markSelfWrite(absolutePath)
+}))
 
 // Production: serve frontend static files
 if (process.env.NODE_ENV === 'production') {
@@ -48,10 +59,41 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 /* ================================================================
+   HTTP Server + Socket.IO
+   ================================================================ */
+
+const server = createServer(app)
+
+const io = new SocketIOServer(server, {
+  cors: { origin: '*' },
+})
+
+io.on('connection', (socket) => {
+  console.log(`[socket.io] Client connected: ${socket.id}`)
+  socket.on('disconnect', () => {
+    console.log(`[socket.io] Client disconnected: ${socket.id}`)
+  })
+})
+
+/* ================================================================
+   File Watcher → Socket.IO broadcast
+   ================================================================ */
+
+createFileWatcher(ROOT_DIR, (fsEvent) => {
+  const isSelfChange = tracker.consumeSelfWrite(fsEvent.absolutePath)
+  io.emit('fs:change', {
+    event: fsEvent.event,
+    path: fsEvent.path,
+    type: fsEvent.type,
+    isSelfChange,
+  })
+})
+
+/* ================================================================
    Start
    ================================================================ */
 
-app.listen(PORT, HOST, () => {
+server.listen(PORT, HOST, () => {
   console.log(`[webdesk-server] Listening on http://${HOST}:${PORT}`)
   console.log(`[webdesk-server] ROOT_DIR: ${ROOT_DIR}`)
 })

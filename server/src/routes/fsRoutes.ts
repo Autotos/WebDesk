@@ -1,8 +1,12 @@
 import { Router } from 'express'
+import path from 'node:path'
 import * as fsService from '../services/fsService.js'
-import { ForbiddenError } from '../utils/pathSecurity.js'
+import { ForbiddenError, resolveSafePath, validateName } from '../utils/pathSecurity.js'
 
-export function createFsRouter(rootDir: string): Router {
+export function createFsRouter(
+  rootDir: string,
+  onSelfWrite?: (absolutePath: string) => void,
+): Router {
   const router = Router()
 
   /* ----------------------------------------------------------
@@ -30,6 +34,11 @@ export function createFsRouter(rootDir: string): Router {
 
     console.error('[fs]', e.message)
     res.status(500).json({ error: e.message || 'Internal server error' })
+  }
+
+  /** Mark a path as self-write for the file watcher to detect. */
+  function markSelf(absolutePath: string) {
+    onSelfWrite?.(absolutePath)
   }
 
   /* ----------------------------------------------------------
@@ -88,6 +97,7 @@ export function createFsRouter(rootDir: string): Router {
         return
       }
       await fsService.writeFile(filePath, content, rootDir)
+      markSelf(fsService.getAbsolutePath(filePath, rootDir))
       res.json({ ok: true })
     } catch (err) {
       handleError(err, res)
@@ -105,6 +115,10 @@ export function createFsRouter(rootDir: string): Router {
         return
       }
       await fsService.createFolder(dirPath, name, rootDir)
+      // Mark the new directory
+      validateName(name)
+      const parentAbs = resolveSafePath(dirPath, rootDir)
+      markSelf(path.join(parentAbs, name))
       res.json({ ok: true })
     } catch (err) {
       handleError(err, res)
@@ -122,6 +136,9 @@ export function createFsRouter(rootDir: string): Router {
         return
       }
       await fsService.createFile(dirPath, name, rootDir)
+      validateName(name)
+      const parentAbs = resolveSafePath(dirPath, rootDir)
+      markSelf(path.join(parentAbs, name))
       res.json({ ok: true })
     } catch (err) {
       handleError(err, res)
@@ -138,6 +155,8 @@ export function createFsRouter(rootDir: string): Router {
         res.status(400).json({ error: 'Missing path' })
         return
       }
+      const absolutePath = fsService.getAbsolutePath(entryPath, rootDir)
+      markSelf(absolutePath)
       await fsService.deleteEntry(entryPath, rootDir)
       res.json({ ok: true })
     } catch (err) {
@@ -155,6 +174,11 @@ export function createFsRouter(rootDir: string): Router {
         res.status(400).json({ error: 'Missing path or newName' })
         return
       }
+      const oldAbsolute = fsService.getAbsolutePath(entryPath, rootDir)
+      // Mark old path (unlink event) and new path (add event)
+      markSelf(oldAbsolute)
+      validateName(newName)
+      markSelf(path.join(path.dirname(oldAbsolute), newName))
       await fsService.renameEntry(entryPath, newName, rootDir)
       res.json({ ok: true })
     } catch (err) {

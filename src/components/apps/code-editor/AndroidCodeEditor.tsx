@@ -9,6 +9,7 @@ import { MarkdownPreview } from './MarkdownPreview'
 import { MarkdownViewToggle } from './MarkdownViewToggle'
 import { EditorBreadcrumbs } from './EditorBreadcrumbs'
 import { EditorStatusBar } from './EditorStatusBar'
+import { ConflictBanner } from './ConflictBanner'
 
 export function AndroidCodeEditor() {
   const editor = useCodeEditor()
@@ -64,6 +65,11 @@ export function AndroidCodeEditor() {
           breadcrumbs={editor.breadcrumbs}
           compact
         />
+      )}
+
+      {/* Conflict banner */}
+      {editor.activeTab?.externallyModified && (
+        <ConflictBanner tabId={editor.activeTab.id} onResolve={editor.resolveConflict} />
       )}
 
       {/* Editor / Preview area */}

@@ -1,8 +1,9 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import type { FsNode } from '../finder/fileSystem'
 import * as fsApi from '@/lib/fsApi'
 import { detectLanguage } from './syntaxHighlighter'
 import type { BreadcrumbItem } from './MonacoEditor'
+import { useFileSync } from '@/hooks/useFileSync'
 
 /* ================================================================
    Types
@@ -17,6 +18,17 @@ export interface Tab {
   isDirty: boolean
   language: string
   scrollTop: number
+  externallyModified?: boolean
+}
+
+/* ================================================================
+   Helpers
+   ================================================================ */
+
+function getParentPath(filePath: string): string {
+  const idx = filePath.lastIndexOf('/')
+  if (idx <= 0) return '/'
+  return filePath.substring(0, idx)
 }
 
 /* ================================================================
@@ -47,6 +59,17 @@ export function useCodeEditor() {
 
   // --- Saving state ---
   const [saving, setSaving] = useState(false)
+
+  // --- Real-time file sync ---
+  const { subscribe, onReconnect } = useFileSync()
+
+  // Stable refs for use in effects
+  const tabsRef = useRef(tabs)
+  tabsRef.current = tabs
+  const expandedDirsRef = useRef(expandedDirs)
+  expandedDirsRef.current = expandedDirs
+  const dirChildrenRef = useRef(dirChildren)
+  dirChildrenRef.current = dirChildren
 
   // --- Load root tree on mount ---
   useEffect(() => {
@@ -195,7 +218,7 @@ export function useCodeEditor() {
       await fsApi.writeFile(activeTab.node.path, activeTab.content)
       setTabs(prev => prev.map(t =>
         t.id === activeTabId
-          ? { ...t, savedContent: t.content, isDirty: false }
+          ? { ...t, savedContent: t.content, isDirty: false, externallyModified: false }
           : t
       ))
     } catch {
@@ -204,6 +227,34 @@ export function useCodeEditor() {
       setSaving(false)
     }
   }, [activeTab, activeTabId])
+
+  // Resolve external change conflict
+  const resolveConflict = useCallback(async (tabId: string, action: 'reload' | 'keep') => {
+    if (action === 'keep') {
+      setTabs(prev => prev.map(t =>
+        t.id === tabId ? { ...t, externallyModified: false } : t
+      ))
+      return
+    }
+
+    // Reload: fetch fresh content from server
+    const tab = tabsRef.current.find(t => t.id === tabId)
+    if (!tab) return
+
+    try {
+      const content = await fsApi.readFileAsText(tab.node.path)
+      setTabs(prev => prev.map(t =>
+        t.id === tabId
+          ? { ...t, content, savedContent: content, isDirty: false, externallyModified: false }
+          : t
+      ))
+    } catch {
+      // Read failed — clear flag anyway
+      setTabs(prev => prev.map(t =>
+        t.id === tabId ? { ...t, externallyModified: false } : t
+      ))
+    }
+  }, [])
 
   // Update cursor position
   const updateCursorPos = useCallback((line: number, col: number) => {
@@ -214,6 +265,119 @@ export function useCodeEditor() {
   const updateBreadcrumbs = useCallback((items: BreadcrumbItem[]) => {
     setBreadcrumbs(items)
   }, [])
+
+  /* ---- Real-time: open file change detection ---- */
+
+  useEffect(() => {
+    // Subscribe to modify events for currently open files
+    const unsubModify = subscribe(
+      (e) => {
+        if (e.isSelfChange) return false
+        if (e.event !== 'modify') return false
+        // Check if any open tab's path matches the changed file
+        return tabsRef.current.some(t => t.node.path === e.path)
+      },
+      async (e) => {
+        const tab = tabsRef.current.find(t => t.node.path === e.path)
+        if (!tab) return
+
+        if (tab.isDirty) {
+          // Conflict: user has unsaved edits
+          setTabs(prev => prev.map(t =>
+            t.node.path === e.path ? { ...t, externallyModified: true } : t
+          ))
+        } else {
+          // No conflict: silently reload
+          try {
+            const content = await fsApi.readFileAsText(tab.node.path)
+            setTabs(prev => prev.map(t =>
+              t.node.path === e.path
+                ? { ...t, content, savedContent: content, isDirty: false }
+                : t
+            ))
+          } catch {
+            // Read failed — ignore
+          }
+        }
+      },
+    )
+
+    // Subscribe to delete events for open files
+    const unsubDelete = subscribe(
+      (e) => {
+        if (e.isSelfChange) return false
+        if (e.event !== 'delete') return false
+        return tabsRef.current.some(t => t.node.path === e.path)
+      },
+      (e) => {
+        // Mark the tab as externally modified (deleted)
+        setTabs(prev => prev.map(t =>
+          t.node.path === e.path ? { ...t, externallyModified: true } : t
+        ))
+      },
+    )
+
+    return () => {
+      unsubModify()
+      unsubDelete()
+    }
+  }, [subscribe])
+
+  /* ---- Real-time: tree directory refresh ---- */
+
+  useEffect(() => {
+    const debounceTimers = new Map<string, ReturnType<typeof setTimeout>>()
+
+    const unsubTree = subscribe(
+      (e) => {
+        if (e.isSelfChange) return false
+        // Check if the event affects any expanded directory
+        const parentDir = getParentPath(e.path)
+        // Check root
+        if (parentDir === '/') return true
+        // Check expanded dirs
+        return expandedDirsRef.current.has(parentDir)
+      },
+      (e) => {
+        const parentDir = getParentPath(e.path)
+        const key = parentDir
+
+        // Debounce per directory
+        const existing = debounceTimers.get(key)
+        if (existing) clearTimeout(existing)
+
+        debounceTimers.set(key, setTimeout(async () => {
+          debounceTimers.delete(key)
+          try {
+            const result = await fsApi.listDirectory(parentDir)
+            if (parentDir === '/') {
+              setTreeNodes(result.entries)
+            } else {
+              setDirChildren(prev => new Map(prev).set(parentDir, result.entries))
+            }
+          } catch {
+            // Refresh failed — ignore
+          }
+        }, 300))
+      },
+    )
+
+    // On reconnect, refresh root tree
+    const unsubReconnect = onReconnect(async () => {
+      try {
+        const result = await fsApi.listDirectory('/')
+        setTreeNodes(result.entries)
+      } catch {
+        // ignore
+      }
+    })
+
+    return () => {
+      unsubTree()
+      unsubReconnect()
+      for (const timer of debounceTimers.values()) clearTimeout(timer)
+    }
+  }, [subscribe, onReconnect])
 
   return {
     // Tree
@@ -239,6 +403,9 @@ export function useCodeEditor() {
     updateScrollTop,
     saveActiveFile,
     saving,
+
+    // Conflict
+    resolveConflict,
 
     // Cursor
     cursorPos,

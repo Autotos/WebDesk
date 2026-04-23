@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Wifi, Signal, BatteryFull } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { SyncStatusIndicator } from '@/components/ui/SyncStatusIndicator'
 
 function useCurrentTime() {
   const [time, setTime] = useState(new Date())
@@ -39,6 +40,7 @@ export function StatusBar({ isInApp }: StatusBarProps) {
     >
       <span className="font-semibold tabular-nums">{timeStr}</span>
       <div className="flex items-center gap-1">
+        <SyncStatusIndicator />
         <Signal className="h-3 w-3" />
         <Wifi className="h-3 w-3" />
         <BatteryFull className="h-3.5 w-3.5" />

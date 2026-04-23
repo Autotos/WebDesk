@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Apple, Wifi, Battery, Search } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { SyncStatusIndicator } from '@/components/ui/SyncStatusIndicator'
 
 function useCurrentTime() {
   const [time, setTime] = useState(new Date())
@@ -58,6 +59,7 @@ export function TopBar({ activeAppName }: TopBarProps) {
       {/* Right: status icons + time */}
       <div className="flex items-center gap-3 opacity-90 text-[12px]">
         <Search className="h-3.5 w-3.5" />
+        <SyncStatusIndicator />
         <Wifi className="h-3.5 w-3.5" />
         <Battery className="h-4 w-4" />
         <span>

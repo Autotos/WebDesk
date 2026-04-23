@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import type { FsNode } from '@/components/apps/finder/fileSystem'
 import * as fsApi from '@/lib/fsApi'
+import { useFileSync } from './useFileSync'
 
 /* ================================================================
    Types
@@ -35,7 +36,7 @@ export interface UseFileSystemReturn {
 }
 
 /* ================================================================
-   Breadcrumb computation (pure function)
+   Helpers
    ================================================================ */
 
 function computeBreadcrumbs(currentPath: string, rootName: string): FsBreadcrumb[] {
@@ -53,6 +54,13 @@ function computeBreadcrumbs(currentPath: string, rootName: string): FsBreadcrumb
   return crumbs
 }
 
+/** Get parent directory of a path: "/foo/bar/baz.txt" -> "/foo/bar" */
+function getParentPath(filePath: string): string {
+  const idx = filePath.lastIndexOf('/')
+  if (idx <= 0) return '/'
+  return filePath.substring(0, idx)
+}
+
 /* ================================================================
    Hook
    ================================================================ */
@@ -67,6 +75,9 @@ export function useFileSystem(): UseFileSystemReturn {
 
   // Abort controller ref for cancelling in-flight requests on rapid navigation
   const abortRef = useRef<AbortController | null>(null)
+
+  // Real-time file sync
+  const { subscribe, onReconnect } = useFileSync()
 
   /* ---- Core directory loader ---- */
 
@@ -101,6 +112,47 @@ export function useFileSystem(): UseFileSystemReturn {
   useEffect(() => {
     loadDirectory('/')
   }, [loadDirectory])
+
+  /* ---- Real-time auto-refresh on external file changes ---- */
+
+  const currentPathRef = useRef(currentPath)
+  currentPathRef.current = currentPath
+
+  const loadDirectoryRef = useRef(loadDirectory)
+  loadDirectoryRef.current = loadDirectory
+
+  useEffect(() => {
+    const debounceTimer = { current: null as ReturnType<typeof setTimeout> | null }
+
+    function debouncedRefresh() {
+      if (debounceTimer.current) clearTimeout(debounceTimer.current)
+      debounceTimer.current = setTimeout(() => {
+        loadDirectoryRef.current(currentPathRef.current)
+      }, 300)
+    }
+
+    const unsubFs = subscribe(
+      (e) => {
+        // Skip self-changes (already handled by API responses)
+        if (e.isSelfChange) return false
+        // Check if the event's parent directory matches the currently viewed path
+        const parentDir = getParentPath(e.path)
+        return parentDir === currentPathRef.current || e.path === currentPathRef.current
+      },
+      () => debouncedRefresh(),
+    )
+
+    // On reconnect, do a catch-up refresh
+    const unsubReconnect = onReconnect(() => {
+      loadDirectoryRef.current(currentPathRef.current)
+    })
+
+    return () => {
+      unsubFs()
+      unsubReconnect()
+      if (debounceTimer.current) clearTimeout(debounceTimer.current)
+    }
+  }, [subscribe, onReconnect])
 
   /* ---- Breadcrumbs (derived) ---- */
 
