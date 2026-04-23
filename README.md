@@ -10,7 +10,7 @@ WebDesk 是一个基于 Web 技术构建的**前后端分离**跨平台桌面模
   │  fetch("/api/fs/...")
   │
   ▼
-Vite Dev Proxy ──► Express Server (port 3001)
+Vite Dev Proxy ──► Express Server (0.0.0.0:3001)
                        │
                        ▼
                    Node.js fs 模块
@@ -20,8 +20,9 @@ Vite Dev Proxy ──► Express Server (port 3001)
 ```
 
 - **前端**：React SPA，所有文件操作通过 `fetch` 调用后端 REST API
-- **后端**：Express 服务器，提供文件系统 CRUD 操作，路径沙箱安全机制
+- **后端**：Express 服务器，监听 `0.0.0.0`（可外部访问），提供文件系统 CRUD 操作，路径沙箱安全机制
 - **开发代理**：Vite `server.proxy` 将 `/api` 请求转发到后端
+- **服务管理**：`webdesk` CLI 工具以 daemon 方式管理生产服务器
 
 ## 功能概览
 
@@ -214,15 +215,27 @@ npm run dev:server
 npm run dev
 ```
 
-**配置 ROOT_DIR (可选):**
+**配置 (可选):**
 
-后端默认以项目根目录作为文件浏览根目录。可通过环境变量自定义：
+项目根目录下的 `config.json` 用于自定义服务器配置：
+
+```json
+{
+  "host": "0.0.0.0",
+  "port": 3001,
+  "rootDir": "~"
+}
+```
+
+| 字段 | 默认值 | 说明 |
+|------|--------|------|
+| `host` | `0.0.0.0` | 监听地址 (`0.0.0.0` 允许外部访问，`127.0.0.1` 仅本机) |
+| `port` | `3001` | 服务端口 |
+| `rootDir` | `~` | 文件浏览根目录，支持 `~` 展开为用户主目录 |
+
+如不创建 `config.json`，服务器使用上述默认值。开发模式也可通过环境变量覆盖：
 
 ```bash
-# 在 server/ 目录下创建 .env 文件
-echo "ROOT_DIR=/path/to/your/directory" > server/.env
-
-# 或直接通过环境变量启动
 ROOT_DIR=/home/user/projects npm run dev:server
 ```
 
@@ -246,18 +259,54 @@ npm run build:server
 
 **生产环境运行：**
 
-```bash
-cd server
-ROOT_DIR=/path/to/files node dist/index.js
-```
-
-后端在生产模式下会自动托管 `../dist/` 下的前端静态文件，并提供 SPA 回退路由。
+详见下方「生产部署」章节。
 
 ### 预览构建产物
 
 ```bash
 npm run preview
 ```
+
+### 生产部署
+
+**1. 构建前后端：**
+
+```bash
+npm run build:all
+```
+
+此命令同时构建前端 (`dist/`) 和后端 (`server/dist/`)。
+
+**2. 全局安装 CLI：**
+
+```bash
+npm install -g .
+```
+
+安装后可在任意位置使用 `webdesk` 命令管理服务。
+
+**3. 服务管理：**
+
+```bash
+webdesk start      # 以 daemon 方式启动服务器
+webdesk stop       # 停止服务器
+webdesk restart    # 重启服务器
+webdesk status     # 查看运行状态
+webdesk --help     # 查看帮助
+```
+
+启动后输出示例：
+
+```
+✔ WebDesk started (PID: 12345)
+  URL:      http://localhost:3001
+  Root:     /home/user
+  Log:      /path/to/WebDesk/logs/webdesk.log
+```
+
+生产模式下后端自动托管前端静态文件（`dist/`），无需单独启动前端服务器，直接通过 `http://host:port` 访问完整应用。
+
+服务日志保存在 `logs/webdesk.log`，进程 PID 记录在 `.webdesk.pid`。
 
 ---
 
@@ -334,8 +383,12 @@ npm run preview
 
 ```
 WebDesk/
-  package.json                       # 前端依赖和脚本 (含 dev:all)
+  package.json                       # 前端依赖和脚本 (含 bin 入口)
+  config.json                        # 服务器配置 (host/port/rootDir)
   vite.config.ts                     # Vite 配置 (含 /api 代理)
+  bin/
+    webdesk.js                       # CLI 入口 (webdesk start/stop/restart/status)
+  logs/                              # 服务运行日志 (自动创建)
   server/                            # 后端服务器
     package.json                     #   后端依赖
     tsconfig.json                    #   后端 TS 配置
@@ -406,7 +459,20 @@ WebDesk/
 | `npm run dev:all` | 同时启动前后端 (推荐) |
 | `npm run build` | 构建前端生产版本 |
 | `npm run build:server` | 编译后端 TypeScript |
+| `npm run build:all` | 同时构建前后端 (生产部署前必须) |
 | `npm run preview` | 预览前端构建产物 |
+
+## CLI 命令速查
+
+全局安装后 (`npm install -g .`) 可使用：
+
+| 命令 | 说明 |
+|------|------|
+| `webdesk start` | 以 daemon 方式启动生产服务器 |
+| `webdesk stop` | 停止服务器 (SIGTERM，5s 超时后 SIGKILL) |
+| `webdesk restart` | 重启服务器 |
+| `webdesk status` | 显示运行状态、PID、URL、配置 |
+| `webdesk --help` | 查看帮助 |
 
 ## 浏览器兼容性
 
