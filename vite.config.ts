@@ -10,7 +10,7 @@ export default defineConfig({
     },
   },
   optimizeDeps: {
-    include: ['monaco-editor'],
+    include: ['monaco-editor', 'markdown-it', 'highlight.js'],
   },
   server: {
     proxy: {

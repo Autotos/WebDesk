@@ -146,4 +146,17 @@
   .scrollbar-thin::-webkit-scrollbar-thumb:hover {
     background: hsl(var(--muted-foreground) / 0.4);
   }
+
+  /* Markdown preview overrides */
+  .markdown-body {
+    background: transparent;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+  .markdown-body img {
+    max-width: 100%;
+  }
+  .markdown-body pre {
+    overflow-x: auto;
+  }
 }

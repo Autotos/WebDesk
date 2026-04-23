@@ -1,15 +1,25 @@
 import { useState } from 'react'
 import { PanelLeftOpen, PanelLeftClose, FolderOpen, Code } from 'lucide-react'
 import { useCodeEditor } from './useCodeEditor'
+import { useMarkdownPreview } from './useMarkdownPreview'
 import { FileTreeView } from './FileTreeView'
 import { EditorTabs } from './EditorTabs'
 import { MonacoEditor } from './MonacoEditor'
+import { MarkdownPreview } from './MarkdownPreview'
+import { MarkdownViewToggle } from './MarkdownViewToggle'
 import { EditorBreadcrumbs } from './EditorBreadcrumbs'
 import { EditorStatusBar } from './EditorStatusBar'
 
 export function AndroidCodeEditor() {
   const editor = useCodeEditor()
   const [showSidebar, setShowSidebar] = useState(false)
+  const mdPreview = useMarkdownPreview(
+    editor.activeTab?.content ?? '',
+    editor.activeTab?.language ?? '',
+    true,
+  )
+
+  const showPreview = mdPreview.isMarkdown && mdPreview.viewMode === 'preview'
 
   return (
     <div className="flex flex-col h-full text-foreground relative">
@@ -33,6 +43,18 @@ export function AndroidCodeEditor() {
             compact
           />
         </div>
+
+        {/* Markdown view toggle (compact, no split) */}
+        {mdPreview.isMarkdown && (
+          <div className="shrink-0 border-l border-mac-border/30">
+            <MarkdownViewToggle
+              viewMode={mdPreview.viewMode}
+              onViewModeChange={mdPreview.setViewMode}
+              isMarkdown={mdPreview.isMarkdown}
+              compact
+            />
+          </div>
+        )}
       </div>
 
       {/* Breadcrumbs */}
@@ -44,18 +66,22 @@ export function AndroidCodeEditor() {
         />
       )}
 
-      {/* Monaco editor area */}
+      {/* Editor / Preview area */}
       {editor.activeTab ? (
-        <MonacoEditor
-          key={editor.activeTabId}
-          content={editor.activeTab.content}
-          language={editor.activeTab.language}
-          onChange={editor.updateContent}
-          onSave={editor.saveActiveFile}
-          onCursorChange={editor.updateCursorPos}
-          onBreadcrumbsChange={editor.updateBreadcrumbs}
-          compact
-        />
+        showPreview ? (
+          <MarkdownPreview html={mdPreview.renderedHtml} compact />
+        ) : (
+          <MonacoEditor
+            key={editor.activeTabId}
+            content={editor.activeTab.content}
+            language={editor.activeTab.language}
+            onChange={editor.updateContent}
+            onSave={editor.saveActiveFile}
+            onCursorChange={editor.updateCursorPos}
+            onBreadcrumbsChange={editor.updateBreadcrumbs}
+            compact
+          />
+        )
       ) : (
         <div className="flex-1 flex items-center justify-center bg-mac-window">
           <div className="text-center text-muted-foreground/50 px-6">

@@ -1,13 +1,42 @@
+import { useRef, useState, useCallback } from 'react'
 import { FolderOpen, Code } from 'lucide-react'
+import type { editor as monacoEditor } from 'monaco-editor'
 import { useCodeEditor } from './useCodeEditor'
+import { useMarkdownPreview } from './useMarkdownPreview'
+import { useSyncScroll } from './useSyncScroll'
 import { FileTreeView } from './FileTreeView'
 import { EditorTabs } from './EditorTabs'
 import { MonacoEditor } from './MonacoEditor'
+import { MarkdownPreview } from './MarkdownPreview'
+import { MarkdownViewToggle } from './MarkdownViewToggle'
 import { EditorBreadcrumbs } from './EditorBreadcrumbs'
 import { EditorStatusBar } from './EditorStatusBar'
 
 export function MacCodeEditor() {
   const editor = useCodeEditor()
+  const mdPreview = useMarkdownPreview(
+    editor.activeTab?.content ?? '',
+    editor.activeTab?.language ?? '',
+    false,
+  )
+
+  const showMonaco = !mdPreview.isMarkdown || mdPreview.viewMode !== 'preview'
+  const showPreview = mdPreview.isMarkdown && mdPreview.viewMode !== 'edit'
+  const isSplit = mdPreview.isMarkdown && mdPreview.viewMode === 'split'
+
+  // Refs for sync scroll
+  const previewRef = useRef<HTMLDivElement>(null)
+  const [monacoInstance, setMonacoInstance] = useState<monacoEditor.IStandaloneCodeEditor | null>(null)
+
+  const handleEditorReady = useCallback((ed: monacoEditor.IStandaloneCodeEditor) => {
+    setMonacoInstance(ed)
+  }, [])
+
+  useSyncScroll({
+    editor: monacoInstance,
+    previewEl: previewRef.current,
+    enabled: isSplit,
+  })
 
   return (
     <div className="flex h-full text-foreground">
@@ -52,6 +81,13 @@ export function MacCodeEditor() {
           compact={false}
         />
 
+        {/* Markdown view toggle (only for .md files) */}
+        <MarkdownViewToggle
+          viewMode={mdPreview.viewMode}
+          onViewModeChange={mdPreview.setViewMode}
+          isMarkdown={mdPreview.isMarkdown}
+        />
+
         {/* Breadcrumbs */}
         {editor.activeTab && (
           <EditorBreadcrumbs
@@ -61,18 +97,30 @@ export function MacCodeEditor() {
           />
         )}
 
-        {/* Monaco editor or empty state */}
+        {/* Editor / Preview area */}
         {editor.activeTab ? (
-          <MonacoEditor
-            key={editor.activeTabId}
-            content={editor.activeTab.content}
-            language={editor.activeTab.language}
-            onChange={editor.updateContent}
-            onSave={editor.saveActiveFile}
-            onCursorChange={editor.updateCursorPos}
-            onBreadcrumbsChange={editor.updateBreadcrumbs}
-            compact={false}
-          />
+          <div className={`flex-1 flex min-h-0 ${isSplit ? 'flex-row' : 'flex-col'}`}>
+            {showMonaco && (
+              <div className={isSplit ? 'w-1/2 min-w-0 flex flex-col border-r border-mac-border/30' : 'flex-1 flex flex-col'}>
+                <MonacoEditor
+                  key={editor.activeTabId}
+                  content={editor.activeTab.content}
+                  language={editor.activeTab.language}
+                  onChange={editor.updateContent}
+                  onSave={editor.saveActiveFile}
+                  onCursorChange={editor.updateCursorPos}
+                  onBreadcrumbsChange={editor.updateBreadcrumbs}
+                  onEditorReady={handleEditorReady}
+                  compact={false}
+                />
+              </div>
+            )}
+            {showPreview && (
+              <div className={isSplit ? 'w-1/2 min-w-0 flex flex-col' : 'flex-1 flex flex-col'}>
+                <MarkdownPreview ref={previewRef} html={mdPreview.renderedHtml} />
+              </div>
+            )}
+          </div>
         ) : (
           <div className="flex-1 flex items-center justify-center bg-mac-window">
             <div className="text-center text-muted-foreground/50">

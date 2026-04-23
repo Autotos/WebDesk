@@ -49,6 +49,7 @@ interface MonacoEditorProps {
   onSave: () => void
   onCursorChange: (line: number, col: number) => void
   onBreadcrumbsChange?: (breadcrumbs: BreadcrumbItem[]) => void
+  onEditorReady?: (editor: monaco.editor.IStandaloneCodeEditor) => void
   readOnly?: boolean
   compact?: boolean
 }
@@ -60,6 +61,7 @@ export function MonacoEditor({
   onSave,
   onCursorChange,
   onBreadcrumbsChange,
+  onEditorReady,
   readOnly,
   compact,
 }: MonacoEditorProps) {
@@ -78,6 +80,8 @@ export function MonacoEditor({
   onCursorChangeRef.current = onCursorChange
   const onBreadcrumbsChangeRef = useRef(onBreadcrumbsChange)
   onBreadcrumbsChangeRef.current = onBreadcrumbsChange
+  const onEditorReadyRef = useRef(onEditorReady)
+  onEditorReadyRef.current = onEditorReady
 
   // Initialize Monaco editor
   useEffect(() => {
@@ -145,6 +149,7 @@ export function MonacoEditor({
 
     editorRef.current = editor
     setReady(true)
+    onEditorReadyRef.current?.(editor)
 
     // --- Event listeners ---
 
