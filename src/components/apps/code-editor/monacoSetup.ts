@@ -13,7 +13,7 @@
 
 import * as monaco from 'monaco-editor'
 
-self.MonacoEnvironment = {
+(self as unknown as Record<string, unknown>).MonacoEnvironment = {
   getWorker(_: unknown, label: string) {
     if (label === 'json') {
       return new Worker(

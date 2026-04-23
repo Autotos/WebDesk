@@ -217,7 +217,7 @@ npm run dev
 
 **配置 (可选):**
 
-项目根目录下的 `config.json` 用于自定义服务器配置：
+配置文件位于 `~/.webdesk/config.json`，首次执行 `webdesk start` 时自动创建：
 
 ```json
 {
@@ -229,11 +229,11 @@ npm run dev
 
 | 字段 | 默认值 | 说明 |
 |------|--------|------|
-| `host` | `0.0.0.0` | 监听地址 (`0.0.0.0` 允许外部访问，`127.0.0.1` 仅本机) |
+| `host` | `0.0.0.0` | 监听地址 (`0.0.0.0` 允许局域网访问，`127.0.0.1` 仅本机) |
 | `port` | `3001` | 服务端口 |
 | `rootDir` | `~` | 文件浏览根目录，支持 `~` 展开为用户主目录 |
 
-如不创建 `config.json`，服务器使用上述默认值。开发模式也可通过环境变量覆盖：
+开发模式也可通过环境变量覆盖：
 
 ```bash
 ROOT_DIR=/home/user/projects npm run dev:server
@@ -298,15 +298,24 @@ webdesk --help     # 查看帮助
 启动后输出示例：
 
 ```
+✔ Created config: /home/user/.webdesk/config.json
 ✔ WebDesk started (PID: 12345)
-  URL:      http://localhost:3001
+  URL:      http://192.168.1.100:3001
   Root:     /home/user
-  Log:      /path/to/WebDesk/logs/webdesk.log
+  Log:      /home/user/.webdesk/logs/webdesk.log
 ```
 
-生产模式下后端自动托管前端静态文件（`dist/`），无需单独启动前端服务器，直接通过 `http://host:port` 访问完整应用。
+首次执行 `webdesk start` 会自动创建 `~/.webdesk/config.json`。局域网内其他设备通过显示的 URL 即可访问。
 
-服务日志保存在 `logs/webdesk.log`，进程 PID 记录在 `.webdesk.pid`。
+生产模式下后端自动托管前端静态文件（`dist/`），无需单独启动前端服务器。
+
+所有运行时文件存储在 `~/.webdesk/` 目录：
+
+| 文件 | 说明 |
+|------|------|
+| `~/.webdesk/config.json` | 服务器配置 |
+| `~/.webdesk/webdesk.pid` | 进程 PID |
+| `~/.webdesk/logs/webdesk.log` | 服务日志 |
 
 ---
 
@@ -384,11 +393,9 @@ webdesk --help     # 查看帮助
 ```
 WebDesk/
   package.json                       # 前端依赖和脚本 (含 bin 入口)
-  config.json                        # 服务器配置 (host/port/rootDir)
   vite.config.ts                     # Vite 配置 (含 /api 代理)
   bin/
     webdesk.js                       # CLI 入口 (webdesk start/stop/restart/status)
-  logs/                              # 服务运行日志 (自动创建)
   server/                            # 后端服务器
     package.json                     #   后端依赖
     tsconfig.json                    #   后端 TS 配置

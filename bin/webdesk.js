@@ -18,9 +18,10 @@ const PROJECT_ROOT = path.resolve(__dirname, '..')
    Path constants
    ================================================================ */
 
-const CONFIG_PATH = path.join(PROJECT_ROOT, 'config.json')
-const PID_FILE = path.join(PROJECT_ROOT, '.webdesk.pid')
-const LOG_DIR = path.join(PROJECT_ROOT, 'logs')
+const WEBDESK_HOME = path.join(os.homedir(), '.webdesk')
+const CONFIG_PATH = path.join(WEBDESK_HOME, 'config.json')
+const PID_FILE = path.join(WEBDESK_HOME, 'webdesk.pid')
+const LOG_DIR = path.join(WEBDESK_HOME, 'logs')
 const LOG_FILE = path.join(LOG_DIR, 'webdesk.log')
 const SERVER_ENTRY = path.join(PROJECT_ROOT, 'server', 'dist', 'index.js')
 
@@ -37,6 +38,31 @@ const DEFAULTS = {
 /* ================================================================
    Utility functions
    ================================================================ */
+
+function ensureWebDeskHome() {
+  fs.mkdirSync(WEBDESK_HOME, { recursive: true })
+  if (!fs.existsSync(CONFIG_PATH)) {
+    const defaultConfig = {
+      host: DEFAULTS.host,
+      port: DEFAULTS.port,
+      rootDir: DEFAULTS.rootDir,
+    }
+    fs.writeFileSync(CONFIG_PATH, JSON.stringify(defaultConfig, null, 2) + '\n', 'utf-8')
+    console.log(`\u2714 Created config: ${CONFIG_PATH}`)
+  }
+}
+
+function getLanIp() {
+  const interfaces = os.networkInterfaces()
+  for (const name of Object.keys(interfaces)) {
+    for (const iface of interfaces[name]) {
+      if (iface.family === 'IPv4' && !iface.internal) {
+        return iface.address
+      }
+    }
+  }
+  return '127.0.0.1'
+}
 
 function loadConfig() {
   let raw = DEFAULTS
@@ -118,7 +144,7 @@ function readLastLines(filePath, n = 10) {
 }
 
 function displayUrl(host, port) {
-  const displayHost = host === '0.0.0.0' ? 'localhost' : host
+  const displayHost = host === '0.0.0.0' ? getLanIp() : host
   return `http://${displayHost}:${port}`
 }
 
@@ -127,6 +153,9 @@ function displayUrl(host, port) {
    ================================================================ */
 
 async function cmdStart() {
+  // Ensure ~/.webdesk/ and config.json exist
+  ensureWebDeskHome()
+
   // Check if already running
   const existingPid = readPid()
   if (existingPid !== null) {
@@ -295,8 +324,9 @@ Commands:
   status    Show WebDesk server status
 
 Configuration:
-  Edit config.json in the project root to change host, port, and rootDir.
+  Edit ~/.webdesk/config.json to change host, port, and rootDir.
   Default: { "host": "0.0.0.0", "port": 3001, "rootDir": "~" }
+  Config and logs are stored in ~/.webdesk/
 `.trim())
 }
 
