@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.3] - 2026-04-27
+
+### Added
+
+- **AI 智能终端**：Warp 风格的三栏终端布局，支持自然语言输入与 AI 命令生成
+  - 自然语言转命令：输入中文或英文描述，AI 自动生成适配当前环境的 shell 命令
+  - 多提供商支持：OpenAI-compatible、DashScope（通义千问）、VolcEngine Ark（豆包）
+  - 流式响应：AI 生成过程实时展示，无需等待完整响应
+  - 环境感知：根据操作系统（Linux/macOS/Windows）、Shell 类型、当前工作目录生成适配命令
+- **输出美化引擎**：智能识别命令输出类型并渲染
+  - 支持 ANSI、代码块、Diff、Git 状态、JSON、日志、表格、进度指示器等渲染器
+  - 内置命令执行提示与输出缓存
+- **技能面板（Skill Panel）**：可启用专业技能上下文，增强 AI 命令生成的领域准确性
+- **任务侧边栏（Task Sidebar）**：多任务会话管理，支持任务创建、切换、关闭
+- **服务端 AI 代理**：后端安全转发 AI 请求，API Key 不从前端直接发送至第三方
+- **AI 设置面板**：在 Settings 中新增 AI 服务配置页
+  - 提供商选择、Base URL / API Key / 模型名称配置
+  - 一键连接测试，自动启用
+- **Sudo 密码提示**：检测到 sudo 命令时自动弹出密码输入框
+
+---
+
 ## [0.1.2] - 2026-04-26
 
 ### Added
