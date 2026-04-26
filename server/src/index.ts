@@ -9,6 +9,7 @@ import { Server as SocketIOServer } from 'socket.io'
 import { createFsRouter } from './routes/fsRoutes.js'
 import { SelfSaveTracker } from './services/selfSaveTracker.js'
 import { createFileWatcher } from './services/fileWatcher.js'
+import * as ptyService from './services/ptyService.js'
 
 /* ================================================================
    Configuration
@@ -87,6 +88,68 @@ createFileWatcher(ROOT_DIR, (fsEvent) => {
     type: fsEvent.type,
     isSelfChange,
   })
+})
+
+/* ================================================================
+   Terminal namespace — PTY over Socket.IO
+   ================================================================ */
+
+const terminalNs = io.of('/terminal')
+
+terminalNs.on('connection', (socket) => {
+  console.log(`[terminal] Client connected: ${socket.id}`)
+
+  // Create a new PTY session
+  socket.on('terminal:create', (opts: { sessionId: string; cwd?: string }) => {
+    const { sessionId, cwd } = opts
+
+    if (ptyService.getSession(sessionId)) {
+      socket.emit('terminal:error', { sessionId, message: 'Session already exists' })
+      return
+    }
+
+    const session = ptyService.createSession(sessionId, cwd || ROOT_DIR)
+
+    session.process.onData((data) => {
+      socket.emit('terminal:output', { sessionId, data })
+    })
+
+    session.process.onExit(({ exitCode }) => {
+      socket.emit('terminal:exit', { sessionId, exitCode })
+      ptyService.destroySession(sessionId)
+    })
+
+    socket.emit('terminal:created', { sessionId })
+  })
+
+  // Client sends keystrokes
+  socket.on('terminal:input', (msg: { sessionId: string; data: string }) => {
+    ptyService.writeToSession(msg.sessionId, msg.data)
+  })
+
+  // Client requests resize
+  socket.on('terminal:resize', (msg: { sessionId: string; cols: number; rows: number }) => {
+    ptyService.resizeSession(msg.sessionId, msg.cols, msg.rows)
+  })
+
+  // Client destroys a session
+  socket.on('terminal:destroy', (msg: { sessionId: string }) => {
+    ptyService.destroySession(msg.sessionId)
+  })
+
+  socket.on('disconnect', () => {
+    console.log(`[terminal] Client disconnected: ${socket.id}`)
+  })
+})
+
+// Cleanup PTY sessions on server shutdown
+process.on('SIGINT', () => {
+  ptyService.destroyAllSessions()
+  process.exit(0)
+})
+process.on('SIGTERM', () => {
+  ptyService.destroyAllSessions()
+  process.exit(0)
 })
 
 /* ================================================================

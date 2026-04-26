@@ -4,6 +4,7 @@ import * as fsApi from '@/lib/fsApi'
 import { detectLanguage } from './syntaxHighlighter'
 import type { BreadcrumbItem } from './MonacoEditor'
 import { useFileSync } from '@/hooks/useFileSync'
+import { useIDEStore } from '@/store/useIDEStore'
 
 /* ================================================================
    Types
@@ -63,6 +64,11 @@ export function useCodeEditor() {
   // --- Real-time file sync ---
   const { subscribe, onReconnect } = useFileSync()
 
+  // --- Workspace root from IDE store ---
+  const workspaceRoot = useIDEStore((s) => s.workspaceRoot)
+  const workspaceRootRef = useRef(workspaceRoot)
+  workspaceRootRef.current = workspaceRoot
+
   // Stable refs for use in effects
   const tabsRef = useRef(tabs)
   tabsRef.current = tabs
@@ -71,17 +77,31 @@ export function useCodeEditor() {
   const dirChildrenRef = useRef(dirChildren)
   dirChildrenRef.current = dirChildren
 
-  // --- Load root tree on mount ---
+  // --- Load root tree on mount or when workspace changes ---
   useEffect(() => {
+    // Reset tree state when workspace changes
+    setExpandedDirs(new Set())
+    setDirChildren(new Map())
+
+    if (!workspaceRoot) {
+      // No workspace — show empty state
+      setTreeNodes([])
+      setRootName('')
+      setTreeLoading(false)
+      setTreeError(null)
+      return
+    }
+
     let cancelled = false
     async function loadRoot() {
       setTreeLoading(true)
       setTreeError(null)
       try {
-        const result = await fsApi.listDirectory('/')
+        const result = await fsApi.listDirectory(workspaceRoot!)
         if (!cancelled) {
           setTreeNodes(result.entries)
-          if (result.rootName) setRootName(result.rootName)
+          const segments = workspaceRoot!.replace(/\/+$/, '').split('/')
+          setRootName(segments[segments.length - 1] || result.rootName || 'Workspace')
         }
       } catch (err) {
         if (!cancelled) {
@@ -93,7 +113,7 @@ export function useCodeEditor() {
     }
     loadRoot()
     return () => { cancelled = true }
-  }, [])
+  }, [workspaceRoot])
 
   // Get children for a folder (lazy loaded via API)
   const getChildren = useCallback((node: FsNode): FsNode[] | undefined => {
@@ -228,6 +248,23 @@ export function useCodeEditor() {
     }
   }, [activeTab, activeTabId])
 
+  // Collapse all expanded directories
+  const collapseAll = useCallback(() => {
+    setExpandedDirs(new Set())
+  }, [])
+
+  // Refresh root file tree
+  const refreshTree = useCallback(async () => {
+    const root = workspaceRootRef.current
+    if (!root) return
+    try {
+      const result = await fsApi.listDirectory(root)
+      setTreeNodes(result.entries)
+    } catch {
+      // Refresh failed — ignore
+    }
+  }, [])
+
   // Resolve external change conflict
   const resolveConflict = useCallback(async (tabId: string, action: 'reload' | 'keep') => {
     if (action === 'keep') {
@@ -331,14 +368,18 @@ export function useCodeEditor() {
     const unsubTree = subscribe(
       (e) => {
         if (e.isSelfChange) return false
+        const wsRoot = workspaceRootRef.current
+        if (!wsRoot) return false
         // Check if the event affects any expanded directory
         const parentDir = getParentPath(e.path)
-        // Check root
-        if (parentDir === '/') return true
+        // Check workspace root
+        if (parentDir === wsRoot) return true
         // Check expanded dirs
         return expandedDirsRef.current.has(parentDir)
       },
       (e) => {
+        const wsRoot = workspaceRootRef.current
+        if (!wsRoot) return
         const parentDir = getParentPath(e.path)
         const key = parentDir
 
@@ -350,7 +391,7 @@ export function useCodeEditor() {
           debounceTimers.delete(key)
           try {
             const result = await fsApi.listDirectory(parentDir)
-            if (parentDir === '/') {
+            if (parentDir === wsRoot) {
               setTreeNodes(result.entries)
             } else {
               setDirChildren(prev => new Map(prev).set(parentDir, result.entries))
@@ -364,8 +405,10 @@ export function useCodeEditor() {
 
     // On reconnect, refresh root tree
     const unsubReconnect = onReconnect(async () => {
+      const wsRoot = workspaceRootRef.current
+      if (!wsRoot) return
       try {
-        const result = await fsApi.listDirectory('/')
+        const result = await fsApi.listDirectory(wsRoot)
         setTreeNodes(result.entries)
       } catch {
         // ignore
@@ -380,6 +423,9 @@ export function useCodeEditor() {
   }, [subscribe, onReconnect])
 
   return {
+    // Workspace
+    workspaceRoot,
+
     // Tree
     treeNodes,
     rootName,
@@ -389,6 +435,8 @@ export function useCodeEditor() {
     loadingDirs,
     getChildren,
     toggleDir,
+    collapseAll,
+    refreshTree,
 
     // Tabs
     tabs,

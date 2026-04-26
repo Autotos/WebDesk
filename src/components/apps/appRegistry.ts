@@ -12,6 +12,7 @@ import {
 import type { ComponentType } from 'react'
 import { FinderApp } from './FinderApp'
 import { CodeEditorApp } from './CodeEditorApp'
+import { TerminalApp } from './TerminalApp'
 
 export interface AppDefinition {
   id: string
@@ -41,7 +42,7 @@ export const APP_REGISTRY: AppDefinition[] = [
     name: 'Terminal',
     icon: Terminal,
     iconBg: 'bg-foreground',
-    component: null,
+    component: TerminalApp,
   },
   {
     id: 'browser',
