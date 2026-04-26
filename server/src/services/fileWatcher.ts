@@ -23,6 +23,26 @@ export function createFileWatcher(
   rootDir: string,
   onFsEvent: FsEventCallback,
 ): FSWatcher {
+  // Use a function-based ignored so chokidar skips entire directory trees
+  // without even opening them. Glob patterns can still descend into dirs
+  // before matching, exhausting inotify watchers on large ROOT_DIR.
+  const SKIP_DIRS = new Set([
+    'node_modules', 'dist', 'build', '.cache', '__pycache__',
+    '.venv', 'venv', '.tox', '.next', '.nuxt', '.output',
+  ])
+
+  const ignored = (filePath: string): boolean => {
+    if (filePath === rootDir) return false
+    const basename = path.basename(filePath)
+    // Skip hidden files/directories (.git, .npm, .cache, .DS_Store, etc.)
+    if (basename.startsWith('.')) return true
+    // Skip known heavy directories
+    if (SKIP_DIRS.has(basename)) return true
+    // Skip swap / backup files
+    if (basename.endsWith('.swp') || basename.endsWith('~')) return true
+    return false
+  }
+
   const watcher = watch(rootDir, {
     persistent: true,
     ignoreInitial: true,
@@ -30,15 +50,7 @@ export function createFileWatcher(
       stabilityThreshold: 300,
       pollInterval: 100,
     },
-    ignored: [
-      '**/node_modules/**',
-      '**/.git/**',
-      '**/.DS_Store',
-      '**/dist/**',
-      '**/.cache/**',
-      '**/*.swp',
-      '**/*~',
-    ],
+    ignored,
   })
 
   function emit(

@@ -1,8 +1,8 @@
 import { lazy, Suspense } from 'react'
 import { useSystemTheme } from '@/hooks/useSystemTheme'
 
-const TerminalWindow = lazy(() =>
-  import('./terminal/TerminalWindow').then((m) => ({ default: m.TerminalWindow })),
+const WarpTerminal = lazy(() =>
+  import('./terminal/WarpTerminal').then((m) => ({ default: m.WarpTerminal })),
 )
 
 export function TerminalApp() {
@@ -16,7 +16,7 @@ export function TerminalApp() {
         </div>
       }
     >
-      <TerminalWindow compact={compact} />
+      <WarpTerminal compact={compact} />
     </Suspense>
   )
 }

@@ -1,0 +1,248 @@
+/* ================================================================
+   highlight.js — Catppuccin Mocha Theme
+   Scoped under .terminal-rich to avoid conflicts with other hljs themes.
+   ================================================================ */
+
+.terminal-rich .hljs {
+  background: #181825;
+  color: #cdd6f4;
+}
+
+.terminal-rich .hljs-comment,
+.terminal-rich .hljs-meta {
+  color: #6c7086;
+  font-style: italic;
+}
+
+.terminal-rich .hljs-keyword,
+.terminal-rich .hljs-selector-tag {
+  color: #cba6f7;
+}
+
+.terminal-rich .hljs-string,
+.terminal-rich .hljs-quote,
+.terminal-rich .hljs-addition {
+  color: #a6e3a1;
+}
+
+.terminal-rich .hljs-number,
+.terminal-rich .hljs-literal,
+.terminal-rich .hljs-variable,
+.terminal-rich .hljs-link {
+  color: #fab387;
+}
+
+.terminal-rich .hljs-title,
+.terminal-rich .hljs-title.function_,
+.terminal-rich .hljs-section {
+  color: #89b4fa;
+}
+
+.terminal-rich .hljs-built_in,
+.terminal-rich .hljs-type {
+  color: #f9e2af;
+}
+
+.terminal-rich .hljs-name,
+.terminal-rich .hljs-attr,
+.terminal-rich .hljs-attribute {
+  color: #89dceb;
+}
+
+.terminal-rich .hljs-tag,
+.terminal-rich .hljs-deletion,
+.terminal-rich .hljs-regexp {
+  color: #f38ba8;
+}
+
+.terminal-rich .hljs-symbol,
+.terminal-rich .hljs-bullet {
+  color: #f5c2e7;
+}
+
+.terminal-rich .hljs-property,
+.terminal-rich .hljs-subst {
+  color: #94e2d5;
+}
+
+.terminal-rich .hljs-params {
+  color: #f5e0dc;
+}
+
+.terminal-rich .hljs-selector-class,
+.terminal-rich .hljs-selector-id {
+  color: #eba0ac;
+}
+
+.terminal-rich .hljs-punctuation {
+  color: #bac2de;
+}
+
+.terminal-rich .hljs-emphasis {
+  font-style: italic;
+}
+
+.terminal-rich .hljs-strong {
+  font-weight: bold;
+}
+
+/* ================================================================
+   Terminal Rich Output — Component styles
+   ================================================================ */
+
+/* File path links */
+.terminal-file-path {
+  text-decoration: underline;
+  text-decoration-color: #6c708680;
+  text-underline-offset: 2px;
+  cursor: pointer;
+  transition: text-decoration-color 0.15s;
+}
+.terminal-file-path:hover {
+  text-decoration-color: #89b4fa;
+  color: #89b4fa;
+}
+
+/* Code block card */
+.terminal-rich-code {
+  position: relative;
+  border-radius: 0.5rem;
+  background: #181825;
+  border: 1px solid #313244;
+  overflow: hidden;
+}
+.terminal-rich-code pre {
+  margin: 0;
+  padding: 0.625rem 0.75rem;
+  overflow-x: auto;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.terminal-rich-code .code-lang-label {
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding: 0.125rem 0.5rem;
+  font-size: 10px;
+  color: #6c7086;
+  background: #313244;
+  border-bottom-left-radius: 0.375rem;
+}
+.terminal-rich-code .line-numbers {
+  display: inline-block;
+  width: 2.5rem;
+  text-align: right;
+  padding-right: 0.75rem;
+  color: #45475a;
+  user-select: none;
+}
+
+/* Table */
+.terminal-rich-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  font-family: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', monospace;
+}
+.terminal-rich-table th {
+  background: #313244;
+  color: #cdd6f4;
+  font-weight: 600;
+  padding: 0.25rem 0.5rem;
+  text-align: left;
+  border-bottom: 1px solid #45475a;
+  white-space: nowrap;
+}
+.terminal-rich-table td {
+  padding: 0.2rem 0.5rem;
+  color: #cdd6f4;
+  border-bottom: 1px solid #313244/30;
+  white-space: nowrap;
+}
+.terminal-rich-table tr:nth-child(even) {
+  background: #181825;
+}
+.terminal-rich-table tr:nth-child(odd) {
+  background: #1e1e2e;
+}
+.terminal-rich-table tr:hover {
+  background: #313244;
+}
+.terminal-rich-table .col-right {
+  text-align: right;
+}
+
+/* Diff */
+.terminal-rich-diff {
+  font-size: 12px;
+  line-height: 1.5;
+  font-family: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', monospace;
+}
+.terminal-rich-diff .diff-line {
+  padding: 0 0.5rem;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+.terminal-rich-diff .diff-add {
+  background: rgba(166, 227, 161, 0.1);
+  color: #a6e3a1;
+}
+.terminal-rich-diff .diff-del {
+  background: rgba(243, 139, 168, 0.1);
+  color: #f38ba8;
+}
+.terminal-rich-diff .diff-hunk {
+  color: #89b4fa;
+  background: rgba(137, 180, 250, 0.05);
+}
+.terminal-rich-diff .diff-header {
+  color: #f9e2af;
+  font-weight: 600;
+}
+.terminal-rich-diff .diff-line-num {
+  display: inline-block;
+  width: 2rem;
+  text-align: right;
+  padding-right: 0.5rem;
+  color: #45475a;
+  user-select: none;
+}
+
+/* Progress bar */
+.terminal-rich-progress {
+  margin-top: 0.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.terminal-rich-progress .progress-track {
+  flex: 1;
+  height: 4px;
+  background: #313244;
+  border-radius: 2px;
+  overflow: hidden;
+}
+.terminal-rich-progress .progress-fill {
+  height: 100%;
+  background: #89b4fa;
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+.terminal-rich-progress .progress-label {
+  font-size: 10px;
+  color: #6c7086;
+  white-space: nowrap;
+}
+
+/* Indeterminate progress animation */
+@keyframes progress-indeterminate {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(200%); }
+}
+.terminal-rich-progress .progress-fill-indeterminate {
+  height: 100%;
+  width: 50%;
+  background: #89b4fa;
+  border-radius: 2px;
+  animation: progress-indeterminate 1.5s ease-in-out infinite;
+}

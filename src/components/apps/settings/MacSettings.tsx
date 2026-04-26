@@ -1,16 +1,17 @@
 import { useState } from 'react'
-import { Palette, LayoutGrid, Info, Wrench, type LucideIcon } from 'lucide-react'
+import { Palette, LayoutGrid, Bot, Info, Wrench, type LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { PersonalizationSection } from './sections/PersonalizationSection'
 import { AppsSection } from './sections/AppsSection'
 import { AboutSection } from './sections/AboutSection'
 import { SystemSection } from './sections/SystemSection'
+import { AISection } from './sections/AISection'
 
 /* ================================================================
    Navigation Config
    ================================================================ */
 
-type SectionId = 'personalization' | 'apps' | 'about' | 'system'
+type SectionId = 'personalization' | 'apps' | 'ai' | 'about' | 'system'
 
 interface NavItem {
   id: SectionId
@@ -21,6 +22,7 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { id: 'personalization', label: '个性化', icon: Palette },
   { id: 'apps', label: '应用', icon: LayoutGrid },
+  { id: 'ai', label: 'AI 服务', icon: Bot },
   { id: 'about', label: '关于', icon: Info },
   { id: 'system', label: '系统管理', icon: Wrench },
 ]
@@ -28,6 +30,7 @@ const NAV_ITEMS: NavItem[] = [
 const SECTION_MAP: Record<SectionId, React.ComponentType> = {
   personalization: PersonalizationSection,
   apps: AppsSection,
+  ai: AISection,
   about: AboutSection,
   system: SystemSection,
 }
