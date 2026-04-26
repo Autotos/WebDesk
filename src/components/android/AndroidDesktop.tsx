@@ -6,12 +6,14 @@ import { StatusBar } from './StatusBar'
 import { AppGrid } from './AppGrid'
 import { AndroidDock, ANDROID_DOCK_APP_IDS } from './AndroidDock'
 import { useDesktopStore } from '@/store/useDesktopStore'
+import { useSettingsStore, getWallpaperStyle } from '@/store/useSettingsStore'
 import { getApp } from '@/components/apps/appRegistry'
 
 const DISMISS_THRESHOLD = 120
 
 export function AndroidDesktop() {
   const { androidActiveApp, openAndroidApp, closeAndroidApp } = useDesktopStore()
+  const androidWallpaper = useSettingsStore((s) => s.androidWallpaper)
   const activeApp = androidActiveApp ? getApp(androidActiveApp) : null
   const AppComponent = activeApp?.component
 
@@ -33,7 +35,7 @@ export function AndroidDesktop() {
   return (
     <div
       className="relative w-full h-full bg-cover bg-center flex flex-col overflow-hidden"
-      style={{ backgroundImage: 'url(/images/android-wallpaper.png)' }}
+      style={getWallpaperStyle(androidWallpaper)}
     >
       {/* Status bar - changes color when app open */}
       <StatusBar isInApp={!!androidActiveApp} />

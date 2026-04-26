@@ -2,10 +2,12 @@ import { TopBar } from './TopBar'
 import { Dock } from './Dock'
 import { Window } from './Window'
 import { useDesktopStore } from '@/store/useDesktopStore'
+import { useSettingsStore, getWallpaperStyle } from '@/store/useSettingsStore'
 import { getApp } from '@/components/apps/appRegistry'
 
 export function MacDesktop() {
   const { windows } = useDesktopStore()
+  const macWallpaper = useSettingsStore((s) => s.macWallpaper)
 
   const sortedVisible = [...windows]
     .filter((w) => !w.isMinimized)
@@ -16,7 +18,7 @@ export function MacDesktop() {
   return (
     <div
       className="relative w-full h-full bg-cover bg-center"
-      style={{ backgroundImage: 'url(/images/mac-wallpaper.png)' }}
+      style={getWallpaperStyle(macWallpaper)}
     >
       <TopBar activeAppName={sortedVisible[0]?.title} />
 

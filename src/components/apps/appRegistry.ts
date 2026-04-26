@@ -13,6 +13,7 @@ import type { ComponentType } from 'react'
 import { FinderApp } from './FinderApp'
 import { CodeEditorApp } from './CodeEditorApp'
 import { TerminalApp } from './TerminalApp'
+import { SettingsApp } from './SettingsApp'
 
 export interface AppDefinition {
   id: string
@@ -77,7 +78,7 @@ export const APP_REGISTRY: AppDefinition[] = [
     name: 'Settings',
     icon: Settings,
     iconBg: 'bg-muted-foreground',
-    component: null,
+    component: SettingsApp,
   },
 ]
 
