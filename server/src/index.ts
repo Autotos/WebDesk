@@ -9,6 +9,7 @@ import { Server as SocketIOServer } from 'socket.io'
 import { createFsRouter } from './routes/fsRoutes.js'
 import { createAiRouter } from './routes/aiRoutes.js'
 import { createSkillRouter } from './routes/skillRoutes.js'
+import { createBrowserProxyRouter } from './routes/browserProxy.js'
 import { SelfSaveTracker } from './services/selfSaveTracker.js'
 import { createFileWatcher } from './services/fileWatcher.js'
 import * as ptyService from './services/ptyService.js'
@@ -145,6 +146,9 @@ app.use('/api/ai', createAiRouter())
 
 // Skills API
 app.use('/api/skills', createSkillRouter())
+
+// Browser proxy (fetch & rewrite external pages for iframe embedding)
+app.use('/api/browser/proxy', createBrowserProxyRouter())
 
 // Production: serve frontend static files
 if (process.env.NODE_ENV === 'production') {

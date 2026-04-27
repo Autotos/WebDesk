@@ -14,6 +14,7 @@ import { FinderApp } from './FinderApp'
 import { CodeEditorApp } from './CodeEditorApp'
 import { TerminalApp } from './TerminalApp'
 import { SettingsApp } from './SettingsApp'
+import { BrowserApp } from './BrowserApp'
 
 export type AppPermission =
   | 'filesystem'
@@ -85,9 +86,9 @@ export const APP_REGISTRY: AppDefinition[] = [
     name: 'Browser',
     icon: Globe,
     iconBg: 'bg-mac-maximize',
-    component: null,
+    component: BrowserApp,
     description: '内置网页浏览器，支持在 WebDesk 中浏览网页。',
-    version: '0.0.1',
+    version: '1.0.0',
     author: 'WebDesk',
     permissions: ['network'],
     builtIn: true,
